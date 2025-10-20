@@ -143,6 +143,36 @@ export const authClient = createAuthClient({
 });
 ```
 
+Add a light React helper in `src/lib/convex.ts` to wrap components with both Convex and Better Auth context:
+
+```ts
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { ConvexReactClient } from "convex/react";
+import type { FunctionComponent, JSX } from "react";
+import { authClient } from "./auth-client";
+
+// Initialized once so all components share the same client.
+const convex = new ConvexReactClient(
+  import.meta.env.PUBLIC_CONVEX_URL as string,
+  {
+    // Optionally pause queries until the user is authenticated
+    expectAuth: true,
+  }
+);
+
+export function withConvexProvider<Props extends JSX.IntrinsicAttributes>(
+  Component: FunctionComponent<Props>
+) {
+  return function WithConvexProvider(props: Props) {
+    return (
+      <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+        <Component {...props} />
+      </ConvexBetterAuthProvider>
+    );
+  };
+}
+```
+
 Mount the Astro API route that proxies requests to Convex authentication by creating `src/pages/api/auth/[...all]/route.ts`:
 
 ```ts
