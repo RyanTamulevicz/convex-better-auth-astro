@@ -195,3 +195,84 @@ export function withConvexProvider<Props extends JSX.IntrinsicAttributes>(
   };
 }
 ```
+
+### Usage
+
+Wrap only the React components that Astro mounts (for example via `client:only`) with the helper when you export them:
+
+```tsx
+import { withConvexProvider } from "@/lib/react-convex";
+
+export default withConvexProvider(function AccountMenu() {
+  return (
+    <>
+      Menu
+    </>
+  );
+});
+```
+
+## Svelte
+
+### Setup (if you're using Svelte for client-side UI)
+
+Add the Convex client setup once near the root by creating `src/lib/auth-client.svelte`:
+
+```svelte
+<script lang="ts">
+  import { setupConvex } from "convex-svelte";
+
+  // Call this once near the root so children can use Convex hooks
+  setupConvex(import.meta.env.PUBLIC_CONVEX_URL as string);
+</script>
+
+<slot />
+```
+
+Create `src/lib/svelte-convex.svelte` (used for layouts) with the same setup:
+
+```svelte
+<script lang="ts">
+  import { setupConvex } from "convex-svelte";
+
+  // Call this once near the root so children can use Convex hooks
+  setupConvex(import.meta.env.PUBLIC_CONVEX_URL as string);
+</script>
+
+<slot />
+```
+
+### Usage
+
+Wrap your Astro layout (or top-level Svelte entry point) with the setup component so all children get Convex context, for example in `src/layouts/Layout.astro`:
+
+```astro
+---
+import "../styles/global.css";
+import ConvexSetup from "../../lib/svelte/svelte-convex.svelte";
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Svelte Convex Better Auth Astro</title>
+  </head>
+  <body>
+    <ConvexSetup>
+      <slot />
+    </ConvexSetup>
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+```
