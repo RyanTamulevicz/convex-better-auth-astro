@@ -166,7 +166,7 @@ export const authClient = createAuthClient({
 });
 ```
 
-Add a light helper in `src/lib/convex.ts` to wrap components with both Convex and Better Auth context:
+Add a light helper in `src/lib/react-convex.tsx` to wrap components with both Convex and Better Auth context:
 
 ```ts
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
