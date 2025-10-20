@@ -19,6 +19,8 @@ pnpm add @ryantamulevicz/convex-better-auth-astro
 
 Make sure you've initialized a Convex project inside the repository (for example `npx convex init`).
 
+Pick the client-side library (React, Svelte, Vue, etc.) you plan to use. Follow the matching section below after you finish the Convex setup steps.
+
 Add the following to `convex/convex.config.ts` so Convex registers the Better Auth integration:
 
 ```ts
@@ -131,6 +133,27 @@ authComponent.registerRoutes(http, createAuth);
 
 export default http;
 ```
+Mount the Astro API route that proxies requests to Convex authentication by creating `src/pages/api/auth/[...all]/route.ts`:
+
+```ts
+import { astroHandler } from "@ryantamulevicz/convex-better-auth-astro";
+import type { APIRoute } from "astro";
+
+const convexSiteUrl = import.meta.env.PUBLIC_CONVEX_SITE_URL;
+const handler = astroHandler(convexSiteUrl ? { convexSiteUrl } : undefined);
+
+export const prerender = false;
+
+export const ALL: APIRoute = async (context) => {
+  return handler(context);
+};
+```
+
+## React
+
+### Setup (if you're using React for client-side UI)
+
+Wire up the frontend helpers in this order:
 
 Create `src/lib/auth-client.ts` to access Better Auth from your Astro front end:
 
@@ -143,7 +166,7 @@ export const authClient = createAuthClient({
 });
 ```
 
-Add a light React helper in `src/lib/convex.ts` to wrap components with both Convex and Better Auth context:
+Add a light helper in `src/lib/convex.ts` to wrap components with both Convex and Better Auth context:
 
 ```ts
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
@@ -171,20 +194,4 @@ export function withConvexProvider<Props extends JSX.IntrinsicAttributes>(
     );
   };
 }
-```
-
-Mount the Astro API route that proxies requests to Convex authentication by creating `src/pages/api/auth/[...all]/route.ts`:
-
-```ts
-import { astroHandler } from "@ryantamulevicz/convex-better-auth-astro";
-import type { APIRoute } from "astro";
-
-const convexSiteUrl = import.meta.env.PUBLIC_CONVEX_SITE_URL;
-const handler = astroHandler(convexSiteUrl ? { convexSiteUrl } : undefined);
-
-export const prerender = false;
-
-export const ALL: APIRoute = async (context) => {
-  return handler(context);
-};
 ```
