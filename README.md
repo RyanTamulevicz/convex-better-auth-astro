@@ -19,7 +19,7 @@ pnpm add @ryantamulevicz/convex-better-auth-astro
 
 Make sure you've initialized a Convex project inside the repository (for example `npx convex init`).
 
-Pick the client-side library (React, Svelte, Vue, etc.) you plan to use. Follow the matching section below after you finish the Convex setup steps.
+Pick the client-side library (Currently React or Svelte) you plan to use. Follow the matching section below after you finish the Convex setup steps.
 
 Add the following to `convex/convex.config.ts` so Convex registers the Better Auth integration:
 
