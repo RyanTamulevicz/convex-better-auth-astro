@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["vitest/globals"],
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src", "tests", "tsdown.config.ts", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}
