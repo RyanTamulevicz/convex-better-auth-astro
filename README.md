@@ -9,10 +9,15 @@ Spin up a new Astro project and add the required dependencies:
 ```bash
 pnpm create astro@latest
 cd your-project-name
+```
+Install dependencies
+```bash
 pnpm add convex@latest @convex-dev/better-auth
 pnpm add better-auth@1.3.27 --save-exact
 pnpm add @ryantamulevicz/convex-better-auth-astro
 ```
+
+Make sure you've initialized a Convex project inside the repository (for example `npx convex init`).
 
 This package expects the following peer dependencies to be installed in your project:
 
