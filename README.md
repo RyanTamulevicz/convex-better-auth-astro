@@ -2,10 +2,16 @@
 
 Utilities for wiring [better-auth](https://github.com/better-auth/better-auth) into an [Astro](https://astro.build/) project that talks to [Convex](https://convex.dev/).
 
-## Installation
+## Setup
+
+Spin up a new Astro project and add the required dependencies:
 
 ```bash
-npm install @ryantamulevicz/convex-better-auth-astro
+pnpm create astro@latest
+cd your-project-name
+pnpm add convex@latest @convex-dev/better-auth
+pnpm add better-auth@1.3.27 --save-exact
+pnpm add @ryantamulevicz/convex-better-auth-astro
 ```
 
 This package expects the following peer dependencies to be installed in your project:
