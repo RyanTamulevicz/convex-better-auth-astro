@@ -1,0 +1,37 @@
+---
+type Props = {
+  current: "react" | "svelte";
+};
+
+const { current } = Astro.props as Props;
+
+const linkClass = (target: Props["current"]) => {
+  const base =
+    "inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  const active =
+    "border-transparent bg-primary text-primary-foreground shadow-sm";
+  const inactive =
+    "border-border bg-background/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground";
+
+  return `${base} ${current === target ? active : inactive}`;
+};
+---
+
+<nav
+  class="border-b border-border/60 bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75"
+>
+  <div
+    class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:flex-nowrap"
+  >
+    <a
+      href="/"
+      class="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+    >
+      ← Back to examples
+    </a>
+    <div class="flex gap-2">
+      <a href="/react" class={linkClass("react")}>React</a>
+      <a href="/svelte" class={linkClass("svelte")}>Svelte</a>
+    </div>
+  </div>
+</nav>

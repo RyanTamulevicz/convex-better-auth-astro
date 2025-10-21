@@ -1,5 +1,6 @@
 ---
 import '../../styles/global-svelte.css';
+import FrameworkSwitcher from '../../components/FrameworkSwitcher.astro';
 import ConvexProvider from '../../lib/svelte/svelte-convex.svelte';
 ---
 <!doctype html>
@@ -13,6 +14,7 @@ import ConvexProvider from '../../lib/svelte/svelte-convex.svelte';
 	</head>
 	<body>
 		<ConvexProvider>
+			<FrameworkSwitcher current="svelte" />
 			<slot />
 		</ConvexProvider>
 	</body>

@@ -1,5 +1,6 @@
 ---
 import '../../styles/global.css';
+import FrameworkSwitcher from '../../components/FrameworkSwitcher.astro';
 ---
 <!doctype html>
 <html lang="en" class="dark">
@@ -11,6 +12,7 @@ import '../../styles/global.css';
 		<title>React Convex Better Auth Astro</title>
 	</head>
 	<body>
+		<FrameworkSwitcher current="react" />
 		<slot />
 	</body>
 </html>
