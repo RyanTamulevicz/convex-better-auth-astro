@@ -285,3 +285,31 @@ export const astroHandler = (opts?: {
 }): AstroHandler => {
   return async ({ request }) => handler(request, opts);
 };
+
+export const createAstroAuthHelpers = <
+  DataModel extends GenericDataModel
+>(
+  createAuth: CreateAuth<DataModel>
+): {
+  getToken: (source?: CookieSource) => string | undefined;
+  getAuth: (
+    context: AstroRequestContext,
+    opts?: { convexSiteUrl?: string }
+  ) => Promise<{ userId: string | undefined; token: string | undefined }>;
+  setupFetchClient: (
+    cookies?: CookieSource,
+    opts?: { convexUrl?: string }
+  ) => Promise<ConvexFetchClient>;
+} => {
+  return {
+    getToken: (source?: CookieSource) => getToken(createAuth, source),
+    getAuth: (
+      context: AstroRequestContext,
+      opts?: { convexSiteUrl?: string }
+    ) => getAuth(context, createAuth, opts),
+    setupFetchClient: (
+      cookies?: CookieSource,
+      opts?: { convexUrl?: string }
+    ) => setupFetchClient(createAuth, cookies, opts),
+  };
+};

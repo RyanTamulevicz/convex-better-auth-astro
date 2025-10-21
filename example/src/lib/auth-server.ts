@@ -1,7 +1,7 @@
-import { getToken as getTokenAstro } from "@ryantamulevicz/convex-better-auth-astro";
+import { createAstroAuthHelpers } from "@ryantamulevicz/convex-better-auth-astro";
 import { createAuth } from "../../convex/auth";
-import type { APIContext } from "astro";
 
-export const getToken = (context: APIContext) => {
-  return getTokenAstro(createAuth, context);
-};
+const { getToken, getAuth, setupFetchClient } =
+  createAstroAuthHelpers(createAuth);
+
+export { getAuth, getToken, setupFetchClient };
