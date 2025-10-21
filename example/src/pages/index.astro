@@ -1,17 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
-
+import Button from '@/components/ui/button/button.svelte';
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
 <Layout>
-	<ul>
-		<li>
-			<a href="/react">React</a>
-		</li>
-		<li>
-			<a href="/svelte">Svelte</a>
-		</li>
-	</ul>
+	<div class="flex min-h-screen items-center justify-center bg-background">
+		<div class="flex flex-col items-center gap-6">
+			<h1 class="text-4xl font-bold text-foreground">Better Auth + Convex + Astro Examples</h1>
+			<div class="flex gap-4">
+				<Button href="/react" size="lg">React</Button>
+				<Button href="/svelte" size="lg">Svelte</Button>
+			</div>
+		</div>
+	</div>
 </Layout>

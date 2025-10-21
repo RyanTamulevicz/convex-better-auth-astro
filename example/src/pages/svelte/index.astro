@@ -1,0 +1,9 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/svelte/SvelteLayout.astro';
+import Hello from '../../components/svelte/Hello.svelte';
+---
+
+<Layout>
+	<Hello client:load />
+</Layout>
