@@ -19,7 +19,7 @@
     type AuthFormValues,
     type AuthMode,
   } from "@/lib/auth/ui-helpers";
-  import { server as serverActions } from "@/actions";
+  import { actions } from "astro:actions";
 
   type FormStatus = "idle" | "pending" | "success" | "error";
 
@@ -162,7 +162,7 @@
     updateMessage = null;
 
     try {
-      await serverActions.updateUsername({ name: sanitized });
+      await actions.updateUsername({ name: sanitized });
       updateStatus = "success";
       updateMessage = "Name updated!";
       nameInput = sanitized;
