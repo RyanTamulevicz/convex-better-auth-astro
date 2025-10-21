@@ -14,17 +14,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  extractResultError,
+  friendlyAuthError,
+  validateAuthForm,
+  type AuthFormValues,
+  type AuthMode,
+} from "@/lib/auth/ui-helpers";
 
-type AuthMode = "signIn" | "signUp";
 type FormStatus = "idle" | "pending" | "success" | "error";
 
-type FormValues = {
-  email: string;
-  password: string;
-  username?: string;
-};
-
-const initialValues: Record<AuthMode, FormValues> = {
+const initialValues: Record<AuthMode, AuthFormValues> = {
   signIn: {
     email: "",
     password: "",
@@ -37,12 +37,14 @@ const initialValues: Record<AuthMode, FormValues> = {
 };
 
 function AuthForm({ mode }: { mode: AuthMode }) {
-  const [values, setValues] = useState<FormValues>(initialValues[mode]);
+  const [values, setValues] = useState<AuthFormValues>(() => ({
+    ...initialValues[mode],
+  }));
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setValues(initialValues[mode]);
+    setValues({ ...initialValues[mode] });
     setStatus("idle");
     setErrorMessage(null);
   }, [mode]);
@@ -55,42 +57,72 @@ function AuthForm({ mode }: { mode: AuthMode }) {
     }));
   }, []);
 
+  const successMessage = useMemo(() => {
+    return mode === "signIn"
+      ? "Signed in successfully."
+      : "Account created! Check your inbox to verify your email.";
+  }, [mode]);
+
+  const fallbackMessage = useMemo(() => {
+    return mode === "signIn"
+      ? "Unable to sign you in. Double-check your email and password and try again."
+      : "Unable to create your account right now. Please try again.";
+  }, [mode]);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      const validation = validateAuthForm(mode, values);
+      if (!validation.ok) {
+        setStatus("error");
+        setErrorMessage(validation.error);
+        return;
+      }
+
+      const sanitized = validation.values;
+
+      setValues((current) => ({
+        ...current,
+        email: sanitized.email,
+        ...(mode === "signUp" && sanitized.username
+          ? { username: sanitized.username }
+          : {}),
+      }));
+
       setStatus("pending");
       setErrorMessage(null);
 
       try {
         if (mode === "signIn") {
-          await authClient.signIn.email({
-            email: values.email,
-            password: values.password,
+          const response = await authClient.signIn.email({
+            email: sanitized.email,
+            password: sanitized.password,
           });
-        } else {
-          const username = values.username?.trim();
-          if (!username) {
-            throw new Error("Please provide a username.");
+          const resultError = extractResultError(response);
+          if (resultError) {
+            throw new Error(friendlyAuthError(resultError, fallbackMessage));
           }
-
-          await authClient.signUp.email({
-            name: username,
-            email: values.email,
-            password: values.password,
+        } else {
+          const response = await authClient.signUp.email({
+            name: sanitized.username ?? sanitized.email,
+            email: sanitized.email,
+            password: sanitized.password,
           });
+          const resultError = extractResultError(response);
+          if (resultError) {
+            throw new Error(friendlyAuthError(resultError, fallbackMessage));
+          }
         }
 
         setStatus("success");
+        setErrorMessage(null);
+        setValues({ ...initialValues[mode] });
       } catch (error) {
         setStatus("error");
-        const message =
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.";
-        setErrorMessage(message);
+        setErrorMessage(friendlyAuthError(error, fallbackMessage));
       }
     },
-    [mode, values.email, values.password, values.username]
+    [fallbackMessage, mode, values]
   );
 
   const { headline, submitLabel, helpText } = useMemo(() => {
@@ -220,7 +252,7 @@ function AuthForm({ mode }: { mode: AuthMode }) {
               role="status"
               className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600"
             >
-              Success! Check your inbox if you enrolled via email link.
+              {successMessage}
             </p>
           ) : null}
         </CardFooter>

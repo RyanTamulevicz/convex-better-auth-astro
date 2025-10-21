@@ -11,22 +11,22 @@
     CardTitle,
   } from "@/components/ui/card/index";
   import { Input } from "@/components/ui/input/index";
+  import {
+    extractResultError,
+    friendlyAuthError,
+    validateAuthForm,
+    type AuthFormValues,
+    type AuthMode,
+  } from "@/lib/auth/ui-helpers";
 
-  type AuthMode = "signIn" | "signUp";
   type FormStatus = "idle" | "pending" | "success" | "error";
-
-  type FormValues = {
-    email: string;
-    password: string;
-    username: string;
-  };
 
   type SessionRecord = {
     session?: { userId?: string | null } | null;
     user?: { name?: string | null; email?: string | null } | null;
   };
 
-  const initialValues: Record<AuthMode, FormValues> = {
+  const initialValues: Record<AuthMode, AuthFormValues> = {
     signIn: {
       email: "",
       password: "",
@@ -45,7 +45,7 @@
   let mode = $state<AuthMode>("signIn");
   let status = $state<FormStatus>("idle");
   let errorMessage = $state<string | null>(null);
-  let values = $state<FormValues>({ ...initialValues.signIn });
+  let values = $state<AuthFormValues>({ ...initialValues.signIn });
   let isSigningOut = $state(false);
 
   const session = authClient.useSession();
@@ -65,6 +65,18 @@
       helpText: "Pick a username so we know what to call you.",
     } as const;
   });
+
+  const successMessage = $derived(
+    mode === "signIn"
+      ? "Signed in successfully."
+      : "Account created! Check your inbox to verify your email."
+  );
+
+  const fallbackMessage = $derived(
+    mode === "signIn"
+      ? "Unable to sign you in. Double-check your email and password and try again."
+      : "Unable to create your account right now. Please try again."
+  );
 
   $effect(() => {
     mode;
@@ -104,36 +116,57 @@
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
+
+    const validation = validateAuthForm(mode, values);
+    if (!validation.ok) {
+      status = "error";
+      errorMessage = validation.error;
+      return;
+    }
+
+    const sanitized = validation.values;
+
+    values = {
+      ...values,
+      email: sanitized.email,
+      ...(mode === "signUp" && sanitized.username
+        ? { username: sanitized.username }
+        : {}),
+    };
+
     status = "pending";
     errorMessage = null;
 
+    const fallback = fallbackMessage;
+
     try {
       if (mode === "signIn") {
-        await authClient.signIn.email({
-          email: values.email,
-          password: values.password,
+        const response = await authClient.signIn.email({
+          email: sanitized.email,
+          password: sanitized.password,
         });
-      } else {
-        const username = values.username.trim();
-        if (!username) {
-          throw new Error("Please provide a username.");
+        const resultError = extractResultError(response);
+        if (resultError) {
+          throw new Error(friendlyAuthError(resultError, fallback));
         }
-
-        await authClient.signUp.email({
-          name: username,
-          email: values.email,
-          password: values.password,
+      } else {
+        const response = await authClient.signUp.email({
+          name: sanitized.username ?? sanitized.email,
+          email: sanitized.email,
+          password: sanitized.password,
         });
+        const resultError = extractResultError(response);
+        if (resultError) {
+          throw new Error(friendlyAuthError(resultError, fallback));
+        }
       }
 
       status = "success";
+      errorMessage = null;
+      values = { ...initialValues[mode] };
     } catch (error) {
       status = "error";
-      const message =
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred.";
-      errorMessage = message;
+      errorMessage = friendlyAuthError(error, fallback);
     }
   }
 
@@ -329,7 +362,7 @@
                 role="status"
                 class="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600"
               >
-                Success! Check your inbox if you enrolled via email link.
+                {successMessage}
               </p>
             {/if}
           </CardFooter>
