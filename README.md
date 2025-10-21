@@ -212,6 +212,8 @@ export default withConvexProvider(function AccountMenu() {
 });
 ```
 
+Once React or Svelte setup is complete you can continue onto the server-side setup section below. You can run Astro + your framework without any server-side wiring (no SSR) and everything works, but enabling middleware or server actions requires a bit more setup.
+
 ## Svelte
 
 ### Setup (if you're using Svelte for client-side UI)
@@ -276,3 +278,9 @@ import ConvexSetup from "../../lib/svelte/svelte-convex.svelte";
   }
 </style>
 ```
+
+Now that the client-side wiring is complete, you can move on to server-side usage.
+
+## Server
+
+Server-side usage is optional unless you need middleware or server actions; those instructions are coming soon.
