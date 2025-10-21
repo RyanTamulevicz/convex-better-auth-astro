@@ -177,9 +177,9 @@ export const setupFetchClient = async <DataModel extends GenericDataModel>(
   opts?: { convexUrl?: string }
 ): Promise<ConvexFetchClient> => {
   const createClient = () => {
-    const convexUrl = opts?.convexUrl ?? process.env.VITE_CONVEX_URL;
+    const convexUrl = opts?.convexUrl ?? process.env.PUBLIC_CONVEX_URL;
     if (!convexUrl) {
-      throw new Error("VITE_CONVEX_URL is not set");
+      throw new Error("PUBLIC_CONVEX_URL is not set");
     }
     const client = new ConvexHttpClient(convexUrl);
     const token = getToken(createAuth, cookies);
@@ -286,9 +286,22 @@ export const astroHandler = (opts?: {
   return async ({ request }) => handler(request, opts);
 };
 
-export const createAstroAuthHelpers = <
-  DataModel extends GenericDataModel
->(
+/**
+ * Creates helper functions bound to your Better Auth `createAuth` instance.
+ * The helpers accept any Astro server context (actions, middleware, API routes)
+ * as the cookie source, so you can reuse a single setup everywhere.
+ *
+ * @example
+ * import { createAstroAuthHelpers } from "@ryantamulevicz/convex-better-auth-astro";
+ * import { createAuth } from "../convex/auth";
+ *
+ * const { setupFetchClient } = createAstroAuthHelpers(createAuth);
+ * const convex = await setupFetchClient(context, {
+ *   convexUrl: import.meta.env.PUBLIC_CONVEX_URL,
+ * });
+ * await convex.fetchMutation(api.users.updateUsername, { username });
+ */
+export const createAstroAuthHelpers = <DataModel extends GenericDataModel>(
   createAuth: CreateAuth<DataModel>
 ): {
   getToken: (source?: CookieSource) => string | undefined;
@@ -307,9 +320,7 @@ export const createAstroAuthHelpers = <
       context: AstroRequestContext,
       opts?: { convexSiteUrl?: string }
     ) => getAuth(context, createAuth, opts),
-    setupFetchClient: (
-      cookies?: CookieSource,
-      opts?: { convexUrl?: string }
-    ) => setupFetchClient(createAuth, cookies, opts),
+    setupFetchClient: (cookies?: CookieSource, opts?: { convexUrl?: string }) =>
+      setupFetchClient(createAuth, cookies, opts),
   };
 };

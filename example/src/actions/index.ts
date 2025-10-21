@@ -1,12 +1,7 @@
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
-import { getToken } from "$lib/auth-server";
-
-const client = new ConvexHttpClient(
-  import.meta.env.PUBLIC_CONVEX_URL as string
-);
+import { setupFetchClient } from "$lib/auth-server";
 
 export const server = {
   updateUsername: defineAction({
@@ -14,11 +9,10 @@ export const server = {
       name: z.string(),
     }),
     handler: async (input, context) => {
-      const token = getToken(context);
-      if (token) {
-        client.setAuth(token);
-      }
-      await client.mutation(api.users.updateUsername, {
+      const convex = await setupFetchClient(context, {
+        convexUrl: import.meta.env.PUBLIC_CONVEX_URL as string,
+      });
+      await convex.fetchMutation(api.users.updateUsername, {
         username: input.name,
       });
       return {
