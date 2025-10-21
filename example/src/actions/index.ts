@@ -1,6 +1,5 @@
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
-import { getToken } from "$lib/auth-server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 
