@@ -294,6 +294,10 @@
           You can now call Convex queries and mutations with this authenticated
           client.
         </p>
+        <p class="text-xs text-muted-foreground">
+          Display name changes run through an Astro Action secured by your Better
+          Auth session.
+        </p>
         <div
           class="rounded-lg border border-border/60 bg-background/60 p-4 text-foreground shadow-sm"
         >
