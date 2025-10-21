@@ -15,9 +15,11 @@
     extractResultError,
     friendlyAuthError,
     validateAuthForm,
+    validateUsername,
     type AuthFormValues,
     type AuthMode,
   } from "@/lib/auth/ui-helpers";
+  import { server as serverActions } from "@/actions";
 
   type FormStatus = "idle" | "pending" | "success" | "error";
 
@@ -47,6 +49,10 @@
   let errorMessage = $state<string | null>(null);
   let values = $state<AuthFormValues>({ ...initialValues.signIn });
   let isSigningOut = $state(false);
+  let nameInput = $state("");
+  let optimisticName = $state<string | null>(null);
+  let updateStatus = $state<FormStatus>("idle");
+  let updateMessage = $state<string | null>(null);
 
   const session = authClient.useSession();
 
@@ -77,6 +83,8 @@
       ? "Unable to sign you in. Double-check your email and password and try again."
       : "Unable to create your account right now. Please try again."
   );
+  const updateFallbackMessage =
+    "We couldn't update your name. Please try again.";
 
   $effect(() => {
     mode;
@@ -113,6 +121,57 @@
   const displayName = $derived(
     userDetails?.name ?? userDetails?.email ?? activeSession?.userId ?? "friend"
   );
+  const effectiveName = $derived(optimisticName ?? displayName);
+  const isUpdatePending = $derived(updateStatus === "pending");
+
+  $effect(() => {
+    displayName;
+    nameInput = displayName;
+    optimisticName = null;
+    updateStatus = "idle";
+    updateMessage = null;
+  });
+
+  function handleNameInput(event: Event) {
+    nameInput = (event.target as HTMLInputElement).value;
+    if (updateStatus !== "idle") {
+      updateStatus = "idle";
+      updateMessage = null;
+    }
+  }
+
+  async function handleUpdateName(event: SubmitEvent) {
+    event.preventDefault();
+
+    const validation = validateUsername(nameInput);
+    if (!validation.ok) {
+      updateStatus = "error";
+      updateMessage = validation.error;
+      return;
+    }
+
+    const sanitized = validation.value;
+    if (sanitized === displayName) {
+      updateStatus = "success";
+      updateMessage = "That's already your current name.";
+      nameInput = sanitized;
+      return;
+    }
+
+    updateStatus = "pending";
+    updateMessage = null;
+
+    try {
+      await serverActions.updateUsername({ name: sanitized });
+      updateStatus = "success";
+      updateMessage = "Name updated!";
+      nameInput = sanitized;
+      optimisticName = sanitized;
+    } catch (error) {
+      updateStatus = "error";
+      updateMessage = friendlyAuthError(error, updateFallbackMessage);
+    }
+  }
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -198,7 +257,7 @@
   <div class={`${containerClasses} items-center`}>
     <Card aria-live="polite" class="w-full max-w-2xl shadow-lg">
       <CardHeader>
-        <CardTitle>Welcome back, {displayName}!</CardTitle>
+        <CardTitle>Welcome back, {effectiveName}!</CardTitle>
         <CardDescription>
           You are signed in and your Convex client is authenticated.
         </CardDescription>
@@ -216,7 +275,7 @@
       <CardContent class="space-y-3 text-sm text-muted-foreground">
         <p>
           Signed in as <span class="font-medium text-foreground"
-            >{displayName}</span
+            >{effectiveName}</span
           >.
         </p>
         {#if userDetails?.email}
@@ -235,6 +294,55 @@
           You can now call Convex queries and mutations with this authenticated
           client.
         </p>
+        <div
+          class="rounded-lg border border-border/60 bg-background/60 p-4 text-foreground shadow-sm"
+        >
+          <form class="space-y-3" onsubmit={handleUpdateName}>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label
+                class="text-sm font-medium text-muted-foreground sm:w-32"
+                for="profile-display-name"
+              >
+                Display name
+              </label>
+              <div
+                class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center"
+              >
+                <Input
+                  id="profile-display-name"
+                  name="profile-display-name"
+                  bind:value={nameInput}
+                  oninput={handleNameInput}
+                  autocomplete="nickname"
+                  placeholder="Your name"
+                  disabled={isUpdatePending}
+                  class="sm:flex-1"
+                  aria-describedby={updateMessage
+                    ? "profile-name-feedback"
+                    : undefined}
+                />
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={isUpdatePending}
+                >
+                  {isUpdatePending ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+            {#if updateMessage}
+              <p
+                id="profile-name-feedback"
+                role={updateStatus === "error" ? "alert" : "status"}
+                class={updateStatus === "error"
+                  ? "text-sm font-medium text-destructive"
+                  : "text-sm font-medium text-emerald-600 dark:text-emerald-400"}
+              >
+                {updateMessage}
+              </p>
+            {/if}
+          </form>
+        </div>
       </CardContent>
     </Card>
   </div>

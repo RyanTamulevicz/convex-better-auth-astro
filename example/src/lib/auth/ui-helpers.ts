@@ -56,6 +56,10 @@ export type AuthValidationResult =
 	| { ok: true; values: SanitizedAuthValues }
 	| { ok: false; error: string };
 
+export type UsernameValidationResult =
+	| { ok: true; value: string }
+	| { ok: false; error: string };
+
 type ErrorParts = {
 	code?: string;
 	status?: number;
@@ -85,32 +89,11 @@ export function validateAuthForm(
 
 	let username: string | undefined;
 	if (mode === "signUp") {
-		username = (values.username ?? "").trim();
-		if (!username) {
-			return {
-				ok: false,
-				error: "Pick a username so we know what to call you.",
-			};
+		const usernameResult = validateUsername(values.username);
+		if (!usernameResult.ok) {
+			return usernameResult;
 		}
-		if (username.length < 3) {
-			return {
-				ok: false,
-				error: "Usernames need at least 3 characters.",
-			};
-		}
-		if (username.length > 32) {
-			return {
-				ok: false,
-				error: "Usernames can be up to 32 characters long.",
-			};
-		}
-		if (!usernamePattern.test(username)) {
-			return {
-				ok: false,
-				error:
-					"Usernames can only use letters, numbers, dots, underscores, and hyphens.",
-			};
-		}
+		username = usernameResult.value;
 	}
 
 	return {
@@ -121,6 +104,39 @@ export function validateAuthForm(
 			...(mode === "signUp" && username ? { username } : {}),
 		},
 	};
+}
+
+export function validateUsername(
+	input: string | null | undefined
+): UsernameValidationResult {
+	const username = (input ?? "").trim();
+	if (!username) {
+		return {
+			ok: false,
+			error: "Pick a username so we know what to call you.",
+		};
+	}
+	if (username.length < 3) {
+		return {
+			ok: false,
+			error: "Usernames need at least 3 characters.",
+		};
+	}
+	if (username.length > 32) {
+		return {
+			ok: false,
+			error: "Usernames can be up to 32 characters long.",
+		};
+	}
+	if (!usernamePattern.test(username)) {
+		return {
+			ok: false,
+			error:
+				"Usernames can only use letters, numbers, dots, underscores, and hyphens.",
+		};
+	}
+
+	return { ok: true, value: username };
 }
 
 export function extractResultError(result: unknown): unknown {

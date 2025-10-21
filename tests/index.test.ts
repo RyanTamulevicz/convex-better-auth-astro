@@ -1,47 +1,43 @@
-import type { Auth } from "better-auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { JWT_COOKIE_NAME } from "@convex-dev/better-auth/plugins";
+import type { Auth } from "better-auth";
 
 type ConvexClientMockCall = {
   url: string;
-  setAuth: ReturnType<typeof vi.fn>;
-  query: ReturnType<typeof vi.fn>;
-  mutation: ReturnType<typeof vi.fn>;
-  action: ReturnType<typeof vi.fn>;
+  setAuth: any;
+  query: any;
+  mutation: any;
+  action: any;
 };
 
-const {
-  sessionCookieName,
-  createCookieGetterMock,
-  betterFetchMock,
-  convexInstances,
-} = vi.hoisted(() => {
-  const sessionCookieName = "__Secure-better-auth.session-token";
+const sessionCookieName = JWT_COOKIE_NAME;
+var createCookieGetterMock: ReturnType<typeof vi.fn>;
+var betterFetchMock: ReturnType<typeof vi.fn>;
+var convexInstances: ConvexClientMockCall[] = [];
 
-  const convexInstances: ConvexClientMockCall[] = [];
-
-  const createCookieGetterMock = vi.fn(() => (key: string) => ({
-    name: key === "sessionToken" ? sessionCookieName : key,
-    value: key,
-  }));
-  const betterFetchMock = vi.fn(async () => ({ data: {} }));
-
+vi.mock("better-auth/cookies", () => {
+  createCookieGetterMock = vi
+    .fn(() => (key: string) => ({
+      name: key === JWT_COOKIE_NAME ? sessionCookieName : key,
+      value: key,
+    }))
+    .mockName("createCookieGetter") as unknown as ReturnType<typeof vi.fn>;
   return {
-    sessionCookieName,
-    createCookieGetterMock,
-    betterFetchMock,
-    convexInstances,
+    createCookieGetter: createCookieGetterMock,
   };
 });
 
-vi.mock("better-auth/cookies", () => ({
-  createCookieGetter: createCookieGetterMock,
-}));
-
-vi.mock("@better-fetch/fetch", () => ({
-  betterFetch: betterFetchMock,
-}));
+vi.mock("@better-fetch/fetch", () => {
+  betterFetchMock = vi
+    .fn(async () => ({ data: {} }))
+    .mockName("betterFetch") as unknown as ReturnType<typeof vi.fn>;
+  return {
+    betterFetch: betterFetchMock,
+  };
+});
 
 vi.mock("convex/browser", () => {
+  convexInstances = [];
   class ConvexHttpClientMock {
     url: string;
     setAuth = vi.fn();
@@ -70,8 +66,15 @@ import {
   type AstroRequestContext,
 } from "../src/index.js";
 
-const createAuthInstance = (options: Record<string, unknown> = {}): Auth<any> =>
-  ({ options } as unknown as Auth<any>);
+const createAuthInstance = (
+  options: Record<string, unknown> = {}
+): { createAuth: (ctx?: unknown, args?: { optionsOnly?: boolean }) => Auth<any>; auth: Auth<any> } => {
+  const auth = { options } as unknown as Auth<any>;
+  const createAuth = vi
+    .fn((ctx?: unknown, _args?: { optionsOnly?: boolean }) => auth)
+    .mockName("createAuth");
+  return { createAuth: createAuth as any, auth };
+};
 
 const originalFetch = globalThis.fetch;
 
@@ -88,17 +91,19 @@ beforeEach(() => {
 
 describe("getCookieName", () => {
   it("returns the configured JWT cookie name", () => {
-    const auth = createAuthInstance();
-    const name = getCookieName(auth);
+    const { createAuth, auth } = createAuthInstance();
+    const name = getCookieName(createAuth);
 
     expect(name).toBe(sessionCookieName);
     expect(createCookieGetterMock).toHaveBeenCalledWith(auth.options);
+    expect(createAuth).toHaveBeenCalledWith({}, { optionsOnly: true });
   });
 });
 
 describe("getToken", () => {
   it("reads from a cookie header string", () => {
-    const token = getToken(createAuthInstance(), `${sessionCookieName}=abc`);
+    const { createAuth } = createAuthInstance();
+    const token = getToken(createAuth, `${sessionCookieName}=abc`);
     expect(token).toBe("abc");
   });
 
@@ -106,7 +111,8 @@ describe("getToken", () => {
     const headers = new Headers({
       cookie: `${sessionCookieName}=cookie-token`,
     });
-    const tokenFromHeaders = getToken(createAuthInstance(), headers);
+    const { createAuth } = createAuthInstance();
+    const tokenFromHeaders = getToken(createAuth, headers);
 
     const astroCookies = {
       get: vi.fn(() => ({ value: "astro-token" })),
@@ -116,7 +122,7 @@ describe("getToken", () => {
       cookies: astroCookies as any,
     };
 
-    const tokenFromContext = getToken(createAuthInstance(), context);
+    const tokenFromContext = getToken(createAuth, context);
 
     expect(tokenFromHeaders).toBe("cookie-token");
     expect(tokenFromContext).toBe("astro-token");
@@ -126,8 +132,9 @@ describe("getToken", () => {
 
 describe("setupFetchClient", () => {
   it("constructs a Convex client with the session token", async () => {
+    const { createAuth } = createAuthInstance();
     const client = await setupFetchClient(
-      createAuthInstance(),
+      createAuth,
       `${sessionCookieName}=session-token`
     );
     const queryRef = { _args: { foo: "bar" } } as any;
@@ -143,7 +150,8 @@ describe("setupFetchClient", () => {
 
   it("throws when the Convex URL is missing", async () => {
     delete process.env.VITE_CONVEX_URL;
-    const client = await setupFetchClient(createAuthInstance());
+    const { createAuth } = createAuthInstance();
+    const client = await setupFetchClient(createAuth);
     expect(() =>
       client.fetchQuery({ _args: undefined } as any, undefined)
     ).toThrow("VITE_CONVEX_URL is not set");
@@ -192,7 +200,7 @@ describe("getAuth", () => {
 
     const result = await getAuth(
       { request, cookies: cookies as any },
-      createAuthInstance()
+      createAuthInstance().createAuth
     );
 
     expect(result).toEqual({ userId: "user", token: "astro-token" });

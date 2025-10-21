@@ -288,11 +288,12 @@ You only need the server helpers if you plan to use middleware or server actions
 ```ts
 import { getToken as getTokenAstro } from "@ryantamulevicz/convex-better-auth-astro";
 import { createAuth } from "../../convex/auth";
-import { getStaticAuth } from "@convex-dev/better-auth";
 
-export const getToken = () => {
-  return getTokenAstro(getStaticAuth(createAuth));
+export const getToken = (
+  source?: Parameters<typeof getTokenAstro>[1]
+) => {
+  return getTokenAstro(createAuth, source);
 };
 ```
 
-Adjust the import paths to match your project layout (`../../convex/auth` assumes your Convex directory lives at the repo root). The exported `getToken` helper now gives you the Convex JWT from any Astro endpoint, middleware, or server action so you can authorize Convex requests server-side.
+Adjust the import paths to match your project layout (`../../convex/auth` assumes your Convex directory lives at the repo root). Pass the Astro request context (for example, `getToken(context)` inside middleware or a server action) so the helper can read the Convex session cookie and return the JWT for authorizing Convex requests server-side.
