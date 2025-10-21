@@ -283,4 +283,16 @@ Now that the client-side wiring is complete, you can move on to server-side usag
 
 ## Server
 
-Server-side usage is optional unless you need middleware or server actions; those instructions are coming soon.
+You only need the server helpers if you plan to use middleware or server actions. Start by creating `src/lib/auth-server.ts` so you can reuse the Convex session cookie name on the server:
+
+```ts
+import { getToken as getTokenAstro } from "@ryantamulevicz/convex-better-auth-astro";
+import { createAuth } from "../../convex/auth";
+import { getStaticAuth } from "@convex-dev/better-auth";
+
+export const getToken = () => {
+  return getTokenAstro(getStaticAuth(createAuth));
+};
+```
+
+Adjust the import paths to match your project layout (`../../convex/auth` assumes your Convex directory lives at the repo root). The exported `getToken` helper now gives you the Convex JWT from any Astro endpoint, middleware, or server action so you can authorize Convex requests server-side.
