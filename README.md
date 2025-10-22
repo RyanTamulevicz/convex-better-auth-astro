@@ -4,12 +4,8 @@ Utilities for wiring [better-auth](https://github.com/better-auth/better-auth) i
 
 ## Setup
 
-Spin up a new Astro project and add the required dependencies:
+It is expected that you have an Astro project started with Convex installed in your project to begin!
 
-```bash
-pnpm create astro@latest
-cd your-project-name
-```
 Install dependencies
 ```bash
 pnpm add convex@latest @convex-dev/better-auth
@@ -279,21 +275,97 @@ import ConvexSetup from "../../lib/svelte/svelte-convex.svelte";
 </style>
 ```
 
-Now that the client-side wiring is complete, you can move on to server-side usage.
+## Server helpers (middleware, actions, Convex access)
 
-## Server
+All server surfaces share the same Better Auth helpers so you only initialize `createAuth` once.
 
-You only need the server helpers if you plan to use middleware or server actions. Start by creating `src/lib/auth-server.ts` so you can reuse the Convex session cookie name on the server:
+1. Create `src/lib/auth-server.ts` and bind the helpers:
 
-```ts
-import { getToken as getTokenAstro } from "@ryantamulevicz/convex-better-auth-astro";
-import { createAuth } from "../../convex/auth";
+   ```ts
+   import { createAstroAuthHelpers } from "@ryantamulevicz/convex-better-auth-astro";
+   import { createAuth } from "../convex/auth";
 
-export const getToken = (
-  source?: Parameters<typeof getTokenAstro>[1]
-) => {
-  return getTokenAstro(createAuth, source);
-};
-```
+   const { getToken, getAuth, setupFetchClient } = createAstroAuthHelpers(createAuth);
 
-Adjust the import paths to match your project layout (`../../convex/auth` assumes your Convex directory lives at the repo root). Pass the Astro request context (for example, `getToken(context)` inside middleware or a server action) so the helper can read the Convex session cookie and return the JWT for authorizing Convex requests server-side.
+   export { getToken, getAuth, setupFetchClient };
+   ```
+
+2. Use `getToken` (and optionally `fetchSession`) in Astro middleware so every request has the current auth context:
+
+   ```ts
+   import { defineMiddleware } from "astro:middleware";
+   import { fetchSession } from "@ryantamulevicz/convex-better-auth-astro";
+   import { getToken } from "$lib/auth-server";
+
+   const convexSiteUrl = import.meta.env.PUBLIC_CONVEX_SITE_URL;
+
+   export const onRequest = defineMiddleware(async (context, next) => {
+     try {
+       const token = getToken(context);
+       const { session } = await fetchSession(
+         context.request,
+         convexSiteUrl ? { convexSiteUrl } : undefined
+       );
+       context.locals.user = session?.user ?? null;
+       context.locals.session = session?.session ?? null;
+       context.locals.convexToken = token ?? null;
+     } catch {
+       context.locals.user = null;
+       context.locals.session = null;
+       context.locals.convexToken = null;
+     }
+
+     return next();
+   });
+   ```
+
+3. Inside an Astro Action, call `setupFetchClient` to run Convex mutations or queries on behalf of the authenticated user:
+
+   ```ts
+   import { defineAction } from "astro:actions";
+   import { z } from "astro:schema";
+   import { api } from "../convex/_generated/api";
+   import { setupFetchClient } from "$lib/auth-server";
+
+   export const updateUsername = defineAction({
+     input: z.object({ name: z.string() }),
+     handler: async (input, context) => {
+       const convex = await setupFetchClient(context, {
+         convexUrl: import.meta.env.PUBLIC_CONVEX_URL as string,
+       });
+       await convex.fetchMutation(api.users.updateUsername, {
+         username: input.name,
+       });
+       return { success: true };
+     },
+   });
+   ```
+
+   When you need to call the action from a React island (see `example/src/components/react/Hello.tsx`), import `actions` from `astro:actions` and invoke it like this:
+
+   ```tsx
+   import { actions } from "astro:actions";
+
+   await actions.updateUsername({ name: sanitized });
+   ```
+
+4. Define the Convex mutation that the action calls (for example `convex/users.ts`):
+
+   ```ts
+   import { mutation } from "./_generated/server";
+   import { v } from "convex/values";
+   import { createAuth, authComponent } from "./auth";
+
+   export const updateUsername = mutation({
+     args: { username: v.string() },
+     handler: async (ctx, args) => {
+       const { auth, headers } = await authComponent.getAuth(createAuth, ctx);
+       await auth.api.updateUser({
+         body: { name: args.username },
+         headers,
+       });
+     },
+   });
+   ```
+
+These four pieces give you a consistent server-side surface: middleware populates locals, actions call Convex with `setupFetchClient`, and Convex mutations reuse Better Auth context when talking back to Better Auth.
