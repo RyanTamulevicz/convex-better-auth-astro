@@ -295,7 +295,7 @@ All server surfaces share the same Better Auth helpers so you only initialize `c
    ```ts
    import { defineMiddleware } from "astro:middleware";
    import { fetchSession } from "@ryantamulevicz/convex-better-auth-astro";
-   import { getToken } from "$lib/auth-server";
+   import { getToken } from "./lib/auth-server";
 
    const convexSiteUrl = import.meta.env.PUBLIC_CONVEX_SITE_URL;
 
@@ -325,7 +325,7 @@ All server surfaces share the same Better Auth helpers so you only initialize `c
    import { defineAction } from "astro:actions";
    import { z } from "astro:schema";
    import { api } from "../convex/_generated/api";
-   import { setupFetchClient } from "$lib/auth-server";
+   import { setupFetchClient } from "../lib/auth-server";
 
    export const updateUsername = defineAction({
      input: z.object({ name: z.string() }),

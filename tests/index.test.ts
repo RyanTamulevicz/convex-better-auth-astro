@@ -68,7 +68,10 @@ import {
 
 const createAuthInstance = (
   options: Record<string, unknown> = {}
-): { createAuth: (ctx?: unknown, args?: { optionsOnly?: boolean }) => Auth<any>; auth: Auth<any> } => {
+): {
+  createAuth: (ctx?: unknown, args?: { optionsOnly?: boolean }) => Auth<any>;
+  auth: Auth<any>;
+} => {
   const auth = { options } as unknown as Auth<any>;
   const createAuth = vi
     .fn((ctx?: unknown, _args?: { optionsOnly?: boolean }) => auth)
@@ -82,8 +85,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   convexInstances.length = 0;
   betterFetchMock.mockResolvedValue({ data: { user: { id: "user" } } });
-  process.env.VITE_CONVEX_URL = "https://convex.example";
-  process.env.VITE_CONVEX_SITE_URL = "https://site.example";
+  process.env.PUBLIC_CONVEX_URL = "https://convex.example";
+  process.env.PUBLIC_CONVEX_SITE_URL = "https://site.example";
   if (originalFetch) {
     globalThis.fetch = originalFetch;
   }
@@ -149,12 +152,12 @@ describe("setupFetchClient", () => {
   });
 
   it("throws when the Convex URL is missing", async () => {
-    delete process.env.VITE_CONVEX_URL;
+    delete process.env.PUBLIC_CONVEX_URL;
     const { createAuth } = createAuthInstance();
     const client = await setupFetchClient(createAuth);
     expect(() =>
       client.fetchQuery({ _args: undefined } as any, undefined)
-    ).toThrow("VITE_CONVEX_URL is not set");
+    ).toThrow("PUBLIC_CONVEX_URL is not set");
     expect(convexInstances).toHaveLength(0);
   });
 });
@@ -236,11 +239,11 @@ describe("astroHandler", () => {
   });
 
   it("throws if the Convex site URL is not set", async () => {
-    delete process.env.VITE_CONVEX_SITE_URL;
+    delete process.env.PUBLIC_CONVEX_SITE_URL;
     const request = new Request("https://astro.dev");
     const handler = astroHandler();
     await expect(handler({ request } as any)).rejects.toThrow(
-      "VITE_CONVEX_SITE_URL is not set"
+      "PUBLIC_CONVEX_SITE_URL is not set"
     );
   });
 });

@@ -1,7 +1,7 @@
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
 import { api } from "../../convex/_generated/api";
-import { setupFetchClient } from "$lib/auth-server";
+import { setupFetchClient } from "../lib/auth-server";
 
 export const server = {
   updateUsername: defineAction({

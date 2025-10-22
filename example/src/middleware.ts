@@ -1,6 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { fetchSession } from "@ryantamulevicz/convex-better-auth-astro";
-import { getToken } from "$lib/auth-server";
+import { getToken } from "./lib/auth-server";
 
 const convexSiteUrl = import.meta.env.PUBLIC_CONVEX_SITE_URL;
 

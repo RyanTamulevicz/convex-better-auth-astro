@@ -233,9 +233,10 @@ export const fetchSession = async <
   if (!request) {
     throw new Error("No request found");
   }
-  const convexSiteUrl = opts?.convexSiteUrl ?? process.env.VITE_CONVEX_SITE_URL;
+  const convexSiteUrl =
+    opts?.convexSiteUrl ?? process.env.PUBLIC_CONVEX_SITE_URL;
   if (!convexSiteUrl) {
-    throw new Error("VITE_CONVEX_SITE_URL is not set");
+    throw new Error("PUBLIC_CONVEX_SITE_URL is not set");
   }
   const { data: session } = await betterFetch<Session | null>(
     "/api/auth/get-session",
@@ -270,9 +271,10 @@ export const getAuth = async <DataModel extends GenericDataModel>(
 
 const handler = (request: Request, opts?: { convexSiteUrl?: string }) => {
   const requestUrl = new URL(request.url);
-  const convexSiteUrl = opts?.convexSiteUrl ?? process.env.VITE_CONVEX_SITE_URL;
+  const convexSiteUrl =
+    opts?.convexSiteUrl ?? process.env.PUBLIC_CONVEX_SITE_URL;
   if (!convexSiteUrl) {
-    throw new Error("VITE_CONVEX_SITE_URL is not set");
+    throw new Error("PUBLIC_CONVEX_SITE_URL is not set");
   }
   const nextUrl = `${convexSiteUrl}${requestUrl.pathname}${requestUrl.search}`;
   const forwardRequest = new Request(nextUrl, request);
