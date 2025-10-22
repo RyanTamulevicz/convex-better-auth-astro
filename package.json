@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/RyanTamulevicz/convex-better-auth-astro#readme",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "peerDependencies": {
     "@better-fetch/fetch": "^1.0.0",
